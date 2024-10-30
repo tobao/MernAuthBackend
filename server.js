@@ -7,10 +7,6 @@ const cookieParser = require("cookie-parser")
 
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("Home Page")
-})
-
 // Middlewares
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
@@ -23,6 +19,10 @@ app.use(
     credentials: true
   })
 )
+
+app.get("/", (req, res) => {
+  res.send("Home Page")
+})
 
 const PORT = process.env.PORT || 5000
 
