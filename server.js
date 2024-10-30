@@ -4,6 +4,7 @@ const mongoose = require("mongoose")
 const cors = require("cors")
 const bodyParser = require("body-parser")
 const cookieParser = require("cookie-parser")
+const userRoute = require('./routes/userRoute')
 
 const app = express();
 
@@ -19,6 +20,10 @@ app.use(
     credentials: true
   })
 )
+
+//Routes
+app.use("/api/users", userRoute)
+//Sử dụng app.use("/api/users", userRoute) để gắn các tuyến đường từ userRoute vào dưới đường dẫn /api/users.
 
 app.get("/", (req, res) => {
   res.send("Home Page")
