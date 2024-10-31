@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const bcrypt = require('bcryptjs')
 
 const userSchema =  mongoose.Schema(
   {
@@ -55,6 +56,18 @@ const userSchema =  mongoose.Schema(
     minimize:false //Lưu tất cả các trường, kể cả các trường trống.
   }
 )
+
+//Encrypt password before saving to DB
+userSchema.pre('save',async function(next){
+  if(!this.isModified('password')){
+    return next()
+  }
+  //Hash password
+  const salt = await bcrypt.genSalt(10)
+  const hashedPassword = await bcrypt.hash(this.password, salt)
+  this.password = hashedPassword;
+  next()
+})
 
 const User = mongoose.model('User', userSchema) //Tạo một model User từ schema userSchema đã định nghĩa.
 module.exports = User //xuất model User để có thể sử dụng ở các file khác trong dự án.
