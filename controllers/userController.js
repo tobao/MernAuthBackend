@@ -3,6 +3,7 @@ const User = require('../models/userModel')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { generateToken } = require('../utils')
+const parser = require('ua-parser-js')
 
 const registerUser = asyncHandler(async (req, res) => {
   //Lấy các thông tin cần thiết từ body của request. Đây là các thông tin được người dùng cung cấp khi đăng ký.
@@ -29,11 +30,17 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error('Email already in use')
   }
 
+  //Get UserAgent
+  const  ua = parser(req.headers['user-agent']);
+    // console.log(ua)
+  const userAgent = [ua.ua]
+
   //Create new user
   const user = await User.create({
     name,
     email,
     password,
+    userAgent,
   })
 
   //Generate Token - Gọi hàm generateToken để tạo token xác thực cho người dùng mới.
