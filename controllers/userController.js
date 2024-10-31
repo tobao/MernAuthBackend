@@ -1,6 +1,8 @@
 const asyncHandler = require('express-async-handler')
 const User = require('../models/userModel')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const { generateToken } = require('../utils')
 
 const registerUser = asyncHandler(async (req, res) => {
   //Lấy các thông tin cần thiết từ body của request. Đây là các thông tin được người dùng cung cấp khi đăng ký.
@@ -34,6 +36,27 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
   })
 
+  //Generate Token - Gọi hàm generateToken để tạo token xác thực cho người dùng mới.
+  const token = generateToken(user._id)
+
+  //Send HTTP  - only cookie --> Gửi cookie HTTP-only chứa token đến client. Cookie này sẽ được bảo vệ và không thể truy cập bởi JavaScript phía client.
+  res.cookie('token',token,{
+    path:'/',
+    httpOnly:true,
+    expires: new Date(Date.now() + 1000 * 86400), //1 day
+    sameSite: 'none',
+    secure: true,
+  })
+
+  if (user) {
+    const {_id, name, email, phone, bio, photo, role, isVerified} = user
+    res.status(201).json({
+      _id, name, email, phone, bio, photo, role, isVerified, token 
+    })
+  } else {
+    res.status(400)
+    throw new Error('Invalid user data')
+  }
 
 
 })
