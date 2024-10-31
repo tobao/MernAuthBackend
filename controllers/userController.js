@@ -112,10 +112,24 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(500)
     throw new Error('Something went wrong, please try again!')
   }
-  
+
+})
+
+const logoutUser = asyncHandler(async (req,res) => {
+  // res.send('Logout')
+   //Send HTTP  - only cookie 
+   res.cookie('token','',{
+    path:'/',
+    httpOnly:true,
+    expires: new Date(0),
+    sameSite: 'none',
+    secure: true,
+  })
+  return res.status(200).json({message:'Logout successfull'})
 })
 
 module.exports = {
   registerUser,
-  loginUser
+  loginUser,
+  logoutUser
 }
