@@ -258,6 +258,38 @@ const upgradeUser = asyncHandler(async (req,res) => {
   })
 }) 
 
+//=======================Send Automated Email =====================================
+const sendAutomatedEmail = asyncHandler(async (req,res) => {
+  // res.send('Email Send')
+  const {subject, send_to, reply_to, template, url} = req.body
+  
+  if (!subject || !send_to || !reply_to || !template) {
+    res.status(500);
+    throw new Error("Missing email parameter");
+  }
+
+  
+  //Get user
+  const user = await User.findOne({email: send_to})
+  if(!user){
+    res.status(404)
+    throw new Error('User not found')
+  }
+
+  const send_from = process.env.EMAIL_USER
+  const name = user.name
+  const link= `${process.env.FRONTEND_URL}${url}`
+  // console.log(subject, send_to, send_from, reply_to, template, name, link)
+  try {
+    await sendEmail(subject, send_to, send_from, reply_to, template, name, link)
+    res.status(200).json({message:'Email Send'})
+  } catch (error) {
+    res.status(500)
+    throw new Error('Email not send, please try again!')
+  }
+}) 
+
+
 
 module.exports = {
   registerUser,
@@ -268,5 +300,6 @@ module.exports = {
   deleteUser,
   getUsers,
   getLoginStatus,
-  upgradeUser
+  upgradeUser,
+  sendAutomatedEmail
 }

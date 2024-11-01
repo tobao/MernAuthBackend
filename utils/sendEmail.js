@@ -27,6 +27,7 @@ const sendEmail = async (subject, send_to, send_from, reply_to, template, name, 
     extName: '.handlebars'
   }
 
+  transporter.use('compile', hbs(handleBarOption))
 
   //Option for sending email
   const options = {
