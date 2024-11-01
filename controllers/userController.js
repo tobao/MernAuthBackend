@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const { generateToken } = require('../utils')
 const parser = require('ua-parser-js')
 
+//=======================Register User=====================================
 const registerUser = asyncHandler(async (req, res) => {
   //Lấy các thông tin cần thiết từ body của request. Đây là các thông tin được người dùng cung cấp khi đăng ký.
   const { name, email, password } = req.body
@@ -68,6 +69,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 
+//=======================Login User=====================================
 const loginUser = asyncHandler(async (req, res) => {
   const {email, password } = req.body
 
@@ -115,6 +117,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 })
 
+//=======================Logout User=====================================
 const logoutUser = asyncHandler(async (req,res) => {
   // res.send('Logout')
    //Send HTTP  - only cookie 
@@ -128,6 +131,7 @@ const logoutUser = asyncHandler(async (req,res) => {
   return res.status(200).json({message:'Logout successfull'})
 })
 
+//=======================Get User=====================================
 const getUser = asyncHandler(async (req,res) => {
   const user = await User.findById(req.user._id)
 
@@ -142,9 +146,35 @@ const getUser = asyncHandler(async (req,res) => {
   }
 })
 
+//=======================Update User=====================================
+const updateUser = asyncHandler(async (req,res) => {
+  const user = await User.findById(req.user._id)
+
+  if(user){
+    const {name, email, phone, bio, photo, role, isVerified} = user
+
+    user.email = req.body.email || email
+    user.name = req.body.name || name
+    user.phone = req.body.phone || phone
+    user.bio = req.body.bio || bio
+    user.photo = req.body.photo|| photo
+
+    const updatedUser = await user.save()
+
+    res.status(200).json({
+      _id: updatedUser._id, name: updatedUser.name, email: updatedUser.email, phone: updatedUser.phone, bio: updatedUser.bio, photo: updatedUser.photo, role: updatedUser.role, isVerified: updatedUser.isVerified
+    })
+
+  }else{
+    res.status(404)
+    throw new Error('User not found...')
+  }
+})
+
 module.exports = {
   registerUser,
   loginUser,
   logoutUser,
-  getUser
+  getUser,
+  updateUser,
 }
