@@ -222,6 +222,23 @@ const getUsers = asyncHandler(async (req,res) => {
   res.status(200).json(users)
 })
 
+//=======================Login Status=====================================
+const getLoginStatus = asyncHandler(async (req,res) => {
+  // res.send('login status')
+  const token = req.cookies.token
+  if(!token){
+    return res.json(false)
+  }
+
+  //Verify Token
+  const verified = jwt.verify(token,process.env.JWT_SECRET)
+
+  if(verified){
+    return res.json(true)
+  }
+  return res.json(false)
+}) 
+
 
 module.exports = {
   registerUser,
@@ -230,5 +247,6 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
-  getUsers
+  getUsers,
+  getLoginStatus,
 }
