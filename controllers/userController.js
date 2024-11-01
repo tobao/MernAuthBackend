@@ -198,7 +198,17 @@ const updateUser = asyncHandler(async (req, res) => {
 
 //=======================Delete User=====================================
 const deleteUser = asyncHandler(async (req, res) => {
-  res.send('Delete')
+  const user = User.findById(req.params.id) //Khi bạn gọi User.findById(req.params.id), nó trả về một tài liệu MongoDB.
+  // Có thể dùng trực tiếp : const user = await User.findByIdAndDelete(req.params.id)
+  if(!user){
+    res.status(404)
+    throw new Error('User not found...')
+  }
+  // await user.remove() --> Giá trị của user được gán trả về 1 tài liệu MongoDB. Ta dùng remove() để thực hiện xóa tài liệu. Tuy nhiên nó đã bị loại bỏ trong phiên bản mới
+  await User.deleteOne({ _id: req.params.id }) // Vì deleteOne() là phương thức của mô hình (model method) nên ta phải dùng User
+  res.status(200).json({
+    message:'User deleted successfully'
+  })
 })
 
 module.exports = {
