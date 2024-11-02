@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const { generateToken } = require('../utils')
 const parser = require('ua-parser-js')
 const sendEmail = require('../utils/sendEmail')
+const crypto = require('crypto')
 
 //=======================Register User=====================================
 const registerUser = asyncHandler(async (req, res) => {
@@ -297,6 +298,67 @@ const sendAutomatedEmail = asyncHandler(async (req, res) => {
   }
 })
 
+//=======================Send Verification Email =====================================
+const sendVerificationEmail = asyncHandler(async (req,res) => {
+  // res.send("Email")
+  const user = await User.findById(req.user._id)
+  if(!user){
+    res.status(404)
+    throw new Error('User not found!')
+  }
+  if(user.verified){
+    res.status(400)
+    throw new Error('User already verified')
+  }
+
+  //Delete Token if it exits in DB
+  let token = await Token.findOne({userId: user._id}) //Tìm kiếm token xác minh cũ của người dùng.
+  if(token){
+    await token.deleteOne()
+  }
+
+  //Create verification token and save
+  const verificationToken = crypto.randomBytes(32).toString("hex") + user._id
+    /*
+      Tạo một chuỗi ngẫu nhiên 32 byte và kết hợp với ID của người dùng để tạo token xác minh.
+      crypto.randomBytes(32).toString("hex") tạo một chuỗi ngẫu nhiên dưới dạng thập lục phân.
+    */
+    console.log(verificationToken)
+    // res.send("Token")
+  
+  //Hash Token and Save - Băm token bằng hàm hashToken và Lưu token đã băm vào cơ sở dữ liệu cùng với ID người dùng, thời gian tạo và thời gian hết hạn.
+  const hashedToken = hashToken(verificationToken)
+  await new Token({
+    userId: user._id,
+    vToken: hashedToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 60 * (60*1000) //60 mins
+  }).save()
+
+
+  //Construc Verification URL - Tạo URL xác minh bằng cách kết hợp URL frontend từ biến môi trường với token xác minh.
+  const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationToken}`
+
+  //Send Email
+  const subject = 'Verify Your Account - AUTH:Z'
+  const send_to = user.email
+  const send_from = process.env.EMAIL_USER
+  const reply_to = 'noreply@baoto.com'
+  const template = 'verifyEmail'
+  const name = user.name
+  const link = verificationUrl
+
+  try {
+    await sendEmail(subject, send_to, send_from, reply_to, template, name, link)
+    res.status(200).json({message:'Verification Email Send'})
+  } catch (error) {
+    res.status(500)
+    throw new Error('Email not send, please try again!')
+  }
+
+
+})
+
 module.exports = {
   registerUser,
   loginUser,
@@ -308,4 +370,5 @@ module.exports = {
   getLoginStatus,
   upgradeUser,
   sendAutomatedEmail,
+  sendVerificationEmail,
 }
