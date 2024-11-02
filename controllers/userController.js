@@ -2,10 +2,11 @@ const asyncHandler = require('express-async-handler')
 const User = require('../models/userModel')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { generateToken } = require('../utils')
+const { generateToken, hashToken } = require('../utils')
 const parser = require('ua-parser-js')
 const sendEmail = require('../utils/sendEmail')
 const crypto = require('crypto')
+const Token = require('../models/tokenModel')
 
 //=======================Register User=====================================
 const registerUser = asyncHandler(async (req, res) => {
@@ -328,6 +329,7 @@ const sendVerificationEmail = asyncHandler(async (req,res) => {
   
   //Hash Token and Save - Băm token bằng hàm hashToken và Lưu token đã băm vào cơ sở dữ liệu cùng với ID người dùng, thời gian tạo và thời gian hết hạn.
   const hashedToken = hashToken(verificationToken)
+
   await new Token({
     userId: user._id,
     vToken: hashedToken,
