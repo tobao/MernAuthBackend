@@ -1,8 +1,17 @@
 const nodemailer = require('nodemailer')                  
-const hbs = require('nodemailer-express-handlebars')     
-const path = require('path')   
+const path = require('path')
+
+// Hàm dynamic import cho `nodemailer-express-handlebars`
+async function loadHBS() {
+  const { default: hbs } = await import('nodemailer-express-handlebars')
+  return hbs
+}
+
 
 const sendEmail = async (subject, send_to, send_from, reply_to, template, name, link) => {
+
+  const hbs = await loadHBS();
+
   //Create Email Transporter
   const transporter = nodemailer.createTransport({
     service:'gmail', //nếu sử dụng gmail thì thêm vào, outlook thì không cần

@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { generateToken } = require('../utils')
 const parser = require('ua-parser-js')
+const sendEmail = require('../utils/sendEmail')
 
 //=======================Register User=====================================
 const registerUser = asyncHandler(async (req, res) => {
@@ -200,22 +201,22 @@ const updateUser = asyncHandler(async (req, res) => {
 const deleteUser = asyncHandler(async (req, res) => {
   const user = User.findById(req.params.id) //Khi bạn gọi User.findById(req.params.id), nó trả về một tài liệu MongoDB.
   // Có thể dùng trực tiếp : const user = await User.findByIdAndDelete(req.params.id)
-  if(!user){
+  if (!user) {
     res.status(404)
     throw new Error('User not found...')
   }
   // await user.remove() --> Giá trị của user được gán trả về 1 tài liệu MongoDB. Ta dùng remove() để thực hiện xóa tài liệu. Tuy nhiên nó đã bị loại bỏ trong phiên bản mới
   await User.deleteOne({ _id: req.params.id }) // Vì deleteOne() là phương thức của mô hình (model method) nên ta phải dùng User
   res.status(200).json({
-    message:'User deleted successfully'
+    message: 'User deleted successfully',
   })
 })
 
 //=======================Get Users=====================================
-const getUsers = asyncHandler(async (req,res) => {
+const getUsers = asyncHandler(async (req, res) => {
   // res.send('Get User')
   const users = await User.find().sort('-createdAt').select('-password')
-  if(!users){
+  if (!users) {
     res.status(500)
     throw new Error('Something went wrong...')
   }
@@ -223,30 +224,30 @@ const getUsers = asyncHandler(async (req,res) => {
 })
 
 //=======================Login Status=====================================
-const getLoginStatus = asyncHandler(async (req,res) => {
+const getLoginStatus = asyncHandler(async (req, res) => {
   // res.send('login status')
   const token = req.cookies.token
-  if(!token){
+  if (!token) {
     return res.json(false)
   }
 
   //Verify Token
-  const verified = jwt.verify(token,process.env.JWT_SECRET)
+  const verified = jwt.verify(token, process.env.JWT_SECRET)
 
-  if(verified){
+  if (verified) {
     return res.json(true)
   }
   return res.json(false)
-}) 
+})
 
 //=======================Upgrade User - Change Role =====================================
-const upgradeUser = asyncHandler(async (req,res) => {
+const upgradeUser = asyncHandler(async (req, res) => {
   // res.send('upgrade')
-  const {role, id} = req.body
+  const { role, id } = req.body
 
   const user = await User.findById(id)
 
-  if(!user){
+  if (!user) {
     res.status(404)
     throw new Error('User not found')
   }
@@ -254,42 +255,47 @@ const upgradeUser = asyncHandler(async (req,res) => {
   await user.save()
 
   res.status(200).json({
-    message: `User role updated to ${role}`
+    message: `User role updated to ${role}`,
   })
-}) 
+})
 
 //=======================Send Automated Email =====================================
-const sendAutomatedEmail = asyncHandler(async (req,res) => {
+const sendAutomatedEmail = asyncHandler(async (req, res) => {
   // res.send('Email Send')
-  const {subject, send_to, reply_to, template, url} = req.body
-  
+  const { subject, send_to, reply_to, template, url } = req.body
+
   if (!subject || !send_to || !reply_to || !template) {
-    res.status(500);
-    throw new Error("Missing email parameter");
+    res.status(400)
+    throw new Error('Missing email parameter')
   }
 
-  
   //Get user
-  const user = await User.findOne({email: send_to})
-  if(!user){
+  const user = await User.findOne({ email: send_to })
+  if (!user) {
     res.status(404)
     throw new Error('User not found')
   }
 
   const send_from = process.env.EMAIL_USER
   const name = user.name
-  const link= `${process.env.FRONTEND_URL}${url}`
-  // console.log(subject, send_to, send_from, reply_to, template, name, link)
+  const link = `${process.env.FRONTEND_URL}/${url}`
+  console.log(subject, send_to, send_from, reply_to, template, name, link)
   try {
-    await sendEmail(subject, send_to, send_from, reply_to, template, name, link)
-    res.status(200).json({message:'Email Send'})
+    await sendEmail(
+      subject,
+      send_to,
+      send_from,
+      reply_to,
+      template,
+      name,
+      link
+    )
+    res.status(200).json({ message: 'Email Send' })
   } catch (error) {
     res.status(500)
     throw new Error('Email not send, please try again!')
   }
-}) 
-
-
+})
 
 module.exports = {
   registerUser,
@@ -301,5 +307,5 @@ module.exports = {
   getUsers,
   getLoginStatus,
   upgradeUser,
-  sendAutomatedEmail
+  sendAutomatedEmail,
 }
