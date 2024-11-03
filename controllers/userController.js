@@ -6,7 +6,10 @@ const { generateToken, hashToken } = require('../utils')
 const parser = require('ua-parser-js')
 const sendEmail = require('../utils/sendEmail')
 const crypto = require('crypto')
+const Cryptr = require('cryptr')
 const Token = require('../models/tokenModel')
+
+const cryptr = new Cryptr(process.env.CRYPTR_KEY)
 
 //=======================Register User=====================================
 const registerUser = asyncHandler(async (req, res) => {
@@ -100,6 +103,37 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(400)
     throw new Error('Invalid email or password')
   }
+
+  //Trigger 2FA for unknow UserAgent
+  const  ua = parser(req.headers['user-agent']); //phân tích chuỗi UserAgent từ tiêu đề yêu cầu HTTP 
+  const thisUserAgent = ua.ua  // trích xuất thông tin UserAgent từ đối tượng ua và lưu vào biến thisUserAgent.
+  console.log(thisUserAgent)
+  const allowedAgent = user.userAgent.includes(thisUserAgent) // kiểm tra xem UserAgent hiện tại (thisUserAgent) có nằm trong danh sách các UserAgent đã được lưu trữ của người dùng hay không (user.userAgent).
+
+  if(!allowedAgent){
+    // Genrate 6 digit code
+    const loginCode = Math.floor(100000 + Math.random() * 900000)
+    console.log(loginCode)
+    //Encrypt login code before saving to DB
+    const encryptedLoginCode = cryptr.encrypt(loginCode.toString())
+
+    //Delete Token if it exits in DB
+    let userToken = await Token.findOne({userId: user._id}) //Tìm kiếm token xác minh cũ của người dùng.
+    if(userToken){
+      await userToken.deleteOne()
+    }
+
+    //Save Token to DB
+    await new Token({
+      userId: user._id,
+      lToken: encryptedLoginCode,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 60 * (60*1000) //60 mins
+    }).save()
+
+    res.status(400) 
+    throw new Error('New browser or Device detected')
+  } 
 
   //Generate Token - Gọi hàm generateToken để tạo token xác thực cho người dùng mới.
   const token = generateToken(user._id)
