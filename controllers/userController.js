@@ -109,7 +109,8 @@ const loginUser = asyncHandler(async (req, res) => {
   const thisUserAgent = ua.ua  // trích xuất thông tin UserAgent từ đối tượng ua và lưu vào biến thisUserAgent.
   console.log(thisUserAgent)
   const allowedAgent = user.userAgent.includes(thisUserAgent) // kiểm tra xem UserAgent hiện tại (thisUserAgent) có nằm trong danh sách các UserAgent đã được lưu trữ của người dùng hay không (user.userAgent).
-
+  console.log(allowedAgent)
+  
   if(!allowedAgent){
     // Genrate 6 digit code
     const loginCode = Math.floor(100000 + Math.random() * 900000)
@@ -532,6 +533,49 @@ const changePassword = asyncHandler(async (req,res) => {
   }
 }) 
 
+//=======================Send Login Code =====================================
+const sendLoginCode= asyncHandler(async (req,res) => {
+  const {email} = req.params
+  const user = await User.findOne({ email })
+  if(!user){
+    res.status(404)
+    throw new Error('User not found')
+  }
+
+  //Find Login Code in DB
+  let userToken = await Token.findOne({
+    userId:user._id,
+    expiresAt: {$gt: Date.now()}
+  })
+  if(!userToken){
+    res.status(404)
+    throw new Error('Invalid or Expired token, please login again')
+  }
+
+  const loginCode = userToken.lToken
+  //decrypt login code 
+  const decryptedLoginCode = cryptr.decrypt(loginCode.toString())
+
+  //Send Login Code
+  const subject = 'Login Access Code - AUTH:Z'
+  const send_to = email
+  const send_from = process.env.EMAIL_USER
+  const reply_to = 'noreply@baoto.com'
+  const template = 'loginCode'
+  const name = user.name
+  const link = decryptedLoginCode
+
+  try {
+    await sendEmail(subject, send_to, send_from, reply_to, template, name, link)
+    res.status(200).json({message:`Access Code sent to ${email}`})
+  } catch (error) {
+    res.status(500)
+    throw new Error('Email not send, please try again!')
+  }
+
+}) 
+
+
 module.exports = {
   registerUser,
   loginUser,
@@ -547,5 +591,6 @@ module.exports = {
   verifyUser,
   forgotPassword,
   resetPassword,
-  changePassword
+  changePassword,
+  sendLoginCode
 }
