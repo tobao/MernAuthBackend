@@ -470,6 +470,34 @@ const resetPassword = asyncHandler(async (req,res) => {
   res.status(200).json({message:'Password Reset Successful, Please login'})
 }) 
 
+//=======================Change Password=====================================
+const changePassword = asyncHandler(async (req,res) => {
+  const {oldPassword, password} = req.body
+  const user = await User.findById(req.user._id)
+
+  if(!user){
+    res.status(404)
+    throw new Error('No user with this email')
+  }
+
+  if(!oldPassword|| !password){
+    res.status(400);
+    throw new Error('Please enter old and new password')
+  }
+
+  //Check if old password is correct
+  const passswordIsConrrect = await bcrypt.compare(oldPassword, user.password)
+  //Save new password
+  if(user && passswordIsConrrect){
+    user.password = password
+    await user.save()
+    res.status(200).json({message:'Password Change Successful, Please re-login'})
+  } else{
+    res.status(400);
+    throw new Error('Old password is incorrect')
+  }
+}) 
+
 module.exports = {
   registerUser,
   loginUser,
@@ -484,5 +512,6 @@ module.exports = {
   sendVerificationEmail,
   verifyUser,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  changePassword
 }
