@@ -109,8 +109,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const thisUserAgent = ua.ua  // trích xuất thông tin UserAgent từ đối tượng ua và lưu vào biến thisUserAgent.
   console.log(thisUserAgent)
   const allowedAgent = user.userAgent.includes(thisUserAgent) // kiểm tra xem UserAgent hiện tại (thisUserAgent) có nằm trong danh sách các UserAgent đã được lưu trữ của người dùng hay không (user.userAgent).
-  console.log(allowedAgent)
-  
+
   if(!allowedAgent){
     // Genrate 6 digit code
     const loginCode = Math.floor(100000 + Math.random() * 900000)
@@ -575,6 +574,60 @@ const sendLoginCode= asyncHandler(async (req,res) => {
 
 }) 
 
+//=======================Login with Code =====================================
+const loginWithCode= asyncHandler(async (req,res) => {
+  const {email} = req.params
+  const {loginCode} = req.body
+
+  const user = await User.findOne({ email })
+  if(!user){
+    res.status(404)
+    throw new Error('User not found')
+  }
+
+  //Find user Login Token
+  let userToken = await Token.findOne({
+    userId:user._id,
+    expiresAt: {$gt: Date.now()}
+  })
+
+  if(!userToken){
+    res.status(404)
+    throw new Error('Invalid or Expired token, please login again')
+  }
+  //Decrypt token 
+  const decryptedLoginCode = cryptr.decrypt(userToken.lToken)
+ 
+  if (loginCode !== decryptedLoginCode) {
+    res.status(400)
+    throw new Error('Incorrect login code, please try again')
+  } else {
+    //Register userAgent
+    const  ua = parser(req.headers['user-agent']); //phân tích chuỗi UserAgent từ tiêu đề yêu cầu HTTP 
+    const thisUserAgent = ua.ua 
+    user.userAgent.push(thisUserAgent)
+    await user.save()
+
+    //Generate Token 
+    const token = generateToken(user._id)
+
+    //Send HTTP  - only cookie 
+    res.cookie('token',token,{
+      path:'/',
+      httpOnly:true,
+      expires: new Date(Date.now() + 1000 * 86400), //1 day
+      sameSite: 'none',
+      secure: true,
+    })
+
+    const {_id, name, email, phone, bio, photo, role, isVerified} = user
+    res.status(201).json({
+      _id, name, email, phone, bio, photo, role, isVerified, token 
+    })
+
+  }
+}) 
+
 
 module.exports = {
   registerUser,
@@ -592,5 +645,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
-  sendLoginCode
+  sendLoginCode,
+  loginWithCode
 }
