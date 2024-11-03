@@ -392,6 +392,57 @@ const verifyUser = asyncHandler(async (req,res) => {
   res.status(200).json({message:'Account Verification Successful'})
 })
 
+//=======================Forgot Password=====================================
+const forgotPassword = asyncHandler(async (req,res) => {
+  const {email} = req.body
+  const user = await User.findOne({email})
+
+  if(!user){
+    res.status(404)
+    throw new Error('No user with this email')
+  }
+
+  //Delete Token if it exits in DB
+  let token = await Token.findOne({userId: user._id}) //Tìm kiếm token xác minh cũ của người dùng.
+  if(token){
+    await token.deleteOne()
+  }
+
+  //Create reset token and save
+  const resetToken = crypto.randomBytes(32).toString("hex") + user._id
+  
+  console.log(resetToken)
+  
+  //Hash Token and Save - Băm token bằng hàm hashToken và Lưu token đã băm vào cơ sở dữ liệu cùng với ID người dùng, thời gian tạo và thời gian hết hạn.
+  const hashedToken = hashToken(resetToken)
+  await new Token({
+    userId: user._id,
+    rToken: hashedToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 60 * (60*1000) //60 mins
+  }).save()
+    
+  //Construc Reset URL 
+  const resetUrl = `${process.env.FRONTEND_URL}/resetPassword/${resetToken}`
+
+  //Send Email
+  const subject = 'Password Reset Request - AUTH:Z'
+  const send_to = user.email
+  const send_from = process.env.EMAIL_USER
+  const reply_to = 'noreply@baoto.com'
+  const template = 'forgotPassword'
+  const name = user.name
+  const link = resetUrl
+
+  try {
+    await sendEmail(subject, send_to, send_from, reply_to, template, name, link)
+    res.status(200).json({message:'Password Reset Email Send'})
+  } catch (error) {
+    res.status(500)
+    throw new Error('Email not send, please try again!')
+  }
+}) 
+
 module.exports = {
   registerUser,
   loginUser,
@@ -404,5 +455,6 @@ module.exports = {
   upgradeUser,
   sendAutomatedEmail,
   sendVerificationEmail,
-  verifyUser
+  verifyUser,
+  forgotPassword
 }

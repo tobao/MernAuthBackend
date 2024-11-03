@@ -1,5 +1,5 @@
 const express = require("express")
-const { registerUser, loginUser, logoutUser, getUser, updateUser, deleteUser, getUsers, getLoginStatus, upgradeUser, sendAutomatedEmail, sendVerificationEmail, verifyUser } = require("../controllers/userController");
+const { registerUser, loginUser, logoutUser, getUser, updateUser, deleteUser, getUsers, getLoginStatus, upgradeUser, sendAutomatedEmail, sendVerificationEmail, verifyUser, forgotPassword } = require("../controllers/userController");
 const { protect, adminOnly, authorOnly } = require("../middleware/authMiddleware");
 const router = express.Router();
 
@@ -17,5 +17,6 @@ router.post('/sendAutomatedEmail',protect, sendAutomatedEmail)
 
 router.post('/sendVerificationEmail',protect, sendVerificationEmail)
 router.patch('/verifyUser/:verificationToken', verifyUser)
+router.post('/forgotPassword', forgotPassword)
 
 module.exports = router;
