@@ -1,5 +1,5 @@
 const express = require("express")
-const { registerUser, loginUser, logoutUser, getUser, updateUser, deleteUser, getUsers, getLoginStatus, upgradeUser, sendAutomatedEmail, sendVerificationEmail, verifyUser, forgotPassword, resetPassword, changePassword, sendLoginCode, loginWithCode } = require("../controllers/userController");
+const { registerUser, loginUser, logoutUser, getUser, updateUser, deleteUser, getUsers, getLoginStatus, upgradeUser, sendAutomatedEmail, sendVerificationEmail, verifyUser, forgotPassword, resetPassword, changePassword, sendLoginCode, loginWithCode, loginWithGoogle } = require("../controllers/userController");
 const { protect, adminOnly, authorOnly } = require("../middleware/authMiddleware");
 const router = express.Router();
 
@@ -23,5 +23,7 @@ router.patch('/changePassword/',protect, changePassword)
 
 router.post('/sendLoginCode/:email', sendLoginCode)
 router.post('/loginWithCode/:email', loginWithCode)
+
+router.post('/google/callback', loginWithGoogle)
 
 module.exports = router;

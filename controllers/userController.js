@@ -628,6 +628,13 @@ const loginWithCode= asyncHandler(async (req,res) => {
   }
 }) 
 
+//=======================Login With Google =====================================
+const loginWithGoogle = asyncHandler(async (req,res) => {
+  const { userToken } = req.body; // Token nhận từ phía client sau khi người dùng đăng nhập Google. Token này sẽ được gửi qua req.body.
+  //   console.log(userToken)
+  res.send('Google Login')
+})
+
 
 module.exports = {
   registerUser,
@@ -646,5 +653,6 @@ module.exports = {
   resetPassword,
   changePassword,
   sendLoginCode,
-  loginWithCode
+  loginWithCode,
+  loginWithGoogle
 }
