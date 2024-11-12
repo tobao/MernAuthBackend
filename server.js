@@ -16,7 +16,7 @@ app.use(cookieParser())
 app.use(bodyParser.json())
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'https://authz-app.vercel.app'],
+    origin: ['http://localhost:3000', 'https://btn-authz.vercel.app'],
     //Sau này đổi auth-app.ver… thành dịa chỉ ta sẽ deloy frontend trên Vercal
     credentials: true
   })

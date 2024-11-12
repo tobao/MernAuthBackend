@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler')
-const User = require('../models/userModel')
+const User = require('../models/UserModel')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { generateToken, hashToken } = require('../utils')
@@ -632,7 +632,67 @@ const loginWithCode= asyncHandler(async (req,res) => {
 const loginWithGoogle = asyncHandler(async (req,res) => {
   const { userToken } = req.body; // Token nhận từ phía client sau khi người dùng đăng nhập Google. Token này sẽ được gửi qua req.body.
   //   console.log(userToken)
-  res.send('Google Login')
+
+  const ticket = await client.verifyIdToken({
+    //verifyIdToken: Hàm này xác thực userToken và kiểm tra tính hợp lệ. Nó cũng kiểm tra xem token này có thuộc về ứng dụng với GOOGLE_CLIENT_ID hay không.
+    idToken: userToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  })
+
+
+  const payload = ticket.getPayload()
+  // console.log(payload)
+  const { name, email, picture, sub } = payload
+  const password = Date.now() + sub
+
+  // Get UserAgent
+  const ua = parser(req.headers["user-agent"])
+  const userAgent = [ua.ua]
+
+  // Check if user exists
+  const user = await User.findOne({ email })
+
+  if (!user) { //Nếu người dùng không tồn tại, tạo mới
+    //   Create new user
+    const newUser = await User.create({
+      name,
+      email,
+      password,
+      photo: picture,
+      isVerified: true,
+      userAgent,
+    })
+
+    //Tạo token xác thực và gửi lại cho người dùng
+    if (newUser) {
+      // Generate Token
+      const token = generateToken(newUser._id); //generateToken: Hàm tạo token xác thực dựa trên ID người dùng.
+
+      // Send HTTP-only cookie
+      res.cookie("token", token, {
+        path: "/",
+        httpOnly: true,
+        expires: new Date(Date.now() + 1000 * 86400), // 1 day
+        sameSite: "none",
+        secure: true,
+      })
+
+      const { _id, name, email, phone, bio, photo, role, isVerified } = newUser
+
+      res.status(201).json({
+        _id,
+        name,
+        email,
+        phone,
+        bio,
+        photo,
+        role,
+        isVerified,
+        token,
+      })
+
+    }
+  }
 })
 
 
